@@ -20,24 +20,29 @@ public:
 	BinaryTree() noexcept;
 	virtual ~BinaryTree() noexcept;
 
-	inline void InsertNode(int data) noexcept; // 새로운 노드 삽입
+	inline bool InsertNode(int data) noexcept; // 새로운 노드 삽입
 	inline void DeleteNode(int data) noexcept; // 검색한 데이터 삭제
 	inline Node* SearchNode(int data) noexcept; // 검색한 데이터의 노드를 찾아서 반환
 	inline bool DeleteAll(void) noexcept; // 트리 전체 삭제 ( 후위 순회 )
-	inline void PrintTree(Node* node = nullptr, int Depth = 0, int iLR = 0) const noexcept; // 트리 전체 출력 ( 중위 순회 )
 	// HDC, 현재 노드, 현재 X좌표, 현재 Y좌표, X좌표가 벌어질 간격, Y좌표가 내려갈 간격
 	inline void DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffset, int yOffset) const noexcept;
 
+	// DrawTreeGDI 함수 호출할 때 Node로 넘기기 위함
+	inline Node* GetRoot() const noexcept;
+
+	// 정렬 상태 검증 함수
+	inline bool VerifyBinarySortTree(Node* currentNode, int& prevvalue) noexcept;
+
 private:
 	// InsertNode 내부에서 호출되는 재귀 함수 ( 위치 찾아서 노드 추가하는 함수 )
-	inline void InsertNodeRecursive(Node* &currentnode, int data); // new는 예외를 던지기 때문에 noexcept 붙이면 안됨
+	inline bool InsertNodeRecursive(Node* &currentnode, int data); // new는 예외를 던지기 때문에 noexcept 붙이면 안됨
 	// SearchNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 )
 	inline Node* FindNodeRecursive(Node* & currentNode, int data) noexcept;
 	// DeleteNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 & 삭제 & 후처리 )
 	inline void deleteNodeRecursive(Node* &currentNode, int data) noexcept;
 	// DeleteAll 내부에서 호출되는 재귀 함수 ( 노드 후위 순회 )
-	inline void DeleteAllRecursive(Node* Node) noexcept;
-
+	inline void DeleteAllRecursive(Node* &currentNode) noexcept;
+	inline void PrintTree(Node* &currentNode) const noexcept; // 중위 순회를 통해서 정렬이 유지되고 있는지 이전 값과 비교해서 검증하는 함수
 
 	Node* RootNode;
 	int NodeCount;
@@ -51,37 +56,35 @@ inline BinaryTree::~BinaryTree() noexcept
 	DeleteAll();
 }
 
-inline void BinaryTree::InsertNode(int data) noexcept
+inline bool BinaryTree::InsertNode(int data) noexcept
 {
 	// 노드를 무한정 넣지 못하게 최대치를 설정해놔야 할듯
-
-	InsertNodeRecursive(RootNode, data);
+	return InsertNodeRecursive(RootNode, data);
 }
 
-inline void BinaryTree::InsertNodeRecursive(Node* &currentNode, int data) 
+inline bool BinaryTree::InsertNodeRecursive(Node* &currentNode, int data) 
 {
 	// 노드가 비어있다면 빈 자리에 노드 생성
 	if (currentNode == nullptr)
 	{
 		currentNode = new Node(data);
-		return;
+		return true;
 	}
 	
 	// 노드가 존재한다면 왼쪽, 오른쪽 방향을 결정해서 재귀 호출
 	if (currentNode->Data > data)
 	{
 		InsertNodeRecursive(currentNode->Left, data);
-		return;
+		return true;
 	}
 	else if (currentNode->Data < data)
 	{
 		InsertNodeRecursive(currentNode->Right, data);
-		return;
+		return true;
 	}
 
 	// 여기에 실행흐름이 온 것이면 같은 값을 넣은 것이므로 무시
-	std::cout << "Same Value Error" << "\n";
-	return;
+	return false;
 }
 
 inline void BinaryTree::DeleteNode(int data) noexcept
@@ -107,6 +110,7 @@ inline void BinaryTree::deleteNodeRecursive(Node* &currentNode, int data) noexce
 		{
 			//std::cout << "Remove Nodedata : " << currentNode->data << "\n";
 			delete currentNode;
+			currentNode = nullptr;
 			return;
 		}
 		// 자식 노드가 한 개라면 부모 노드랑 자식 노드랑 연결 후 삭제
@@ -121,7 +125,7 @@ inline void BinaryTree::deleteNodeRecursive(Node* &currentNode, int data) noexce
 		else if (currentNode->Left == nullptr && currentNode->Right != nullptr)
 		{
 			Node* temp = currentNode->Right;
-			delete currentNode;
+			delete currentNode; // 삭제한 메모리 위에 자식 노드 주소를 저장하기 때문에 nullptr로 초기화 안해줘도 됨
 			currentNode = temp;
 			return;
 		}
@@ -168,7 +172,7 @@ inline Node* BinaryTree::FindNodeRecursive(Node* &currentNode, int data) noexcep
 	// 검색한 노드가 존재하지 않으면 그 다음 노드 검색하도록 리턴
 	if (currentNode == nullptr)
 	{
-		std::cout << "can't find data" << "\n";
+		//std::cout << "can't find data" << "\n";
 		return nullptr;
 	}
 
@@ -197,24 +201,31 @@ inline bool BinaryTree::DeleteAll(void) noexcept // 트리 전체 삭제 ( 후위 순회 )
 	return false;
 }
 
-inline void BinaryTree::DeleteAllRecursive(Node* Node) noexcept
+inline void BinaryTree::DeleteAllRecursive(Node* &currentNode) noexcept
 {
-	if (Node == nullptr)
+	if (currentNode == nullptr)
 	{
 		return;
 	}
 
-	DeleteAllRecursive(Node->Left);
-	DeleteAllRecursive(Node->Right);
-	delete Node;
+	DeleteAllRecursive(currentNode->Left);
+	DeleteAllRecursive(currentNode->Right);
+	delete currentNode;
+	currentNode = nullptr; // delete 이후 0x8123을 nullptr 수정해줌으로써 읽기 메모리 접근 에러 방지
 
 }
 
-inline void BinaryTree::PrintTree(Node* node = nullptr, int Depth = 0, int iLR = 0) const noexcept // 트리 전체 출력 ( 중위 순회 )
+inline void BinaryTree::PrintTree(Node* &currentNode) const noexcept // 트리 전체 출력 ( 중위 순회 )
 {
 
+	if (currentNode == nullptr)
+	{
+		return;
+	}
 
-
+	PrintTree(currentNode->Left);
+	std::cout << currentNode->Data << "\n";
+	PrintTree(currentNode->Right);
 
 }
 
@@ -259,4 +270,40 @@ inline void BinaryTree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffs
 
 	// y 좌표를 살짝 보정하여 원의 중앙에 오도록 맞춤
 	TextOutW(hdc, x, y + 5, strData.c_str(), strData.length());
+}
+
+inline Node* BinaryTree::GetRoot() const noexcept
+{ 
+	return RootNode; 
+}
+
+inline bool BinaryTree::VerifyBinarySortTree(Node* currentNode, int& prevvalue) noexcept
+{
+
+	if (currentNode == nullptr)
+	{
+		return true;
+	}
+
+	if (VerifyBinarySortTree(currentNode->Left, prevvalue) == false)
+	{
+		return false;
+	}
+
+	// 이전 값이 더 크다면 정렬 실패된 것이므로 종료
+	if (prevvalue >= currentNode->Data)
+	{
+		std::cout << "failed Verify BinarySortTree!!!!!" << "\n";
+		return false;
+	}
+	prevvalue = currentNode->Data;
+
+	if (VerifyBinarySortTree(currentNode->Right, prevvalue) == false)
+	{
+		return false;
+	}
+
+	// 오른쪽, 왼쪽 모두 정렬 검증 통과
+	return true;
+
 }
