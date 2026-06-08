@@ -1,4 +1,4 @@
-﻿#include "BinaryTree.h"
+﻿#include "RedBlackTree.h"
 #include <windows.h>
 #include <iostream>
 #include <random>
@@ -14,7 +14,6 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 
 void                StressTestFuc(std::mt19937& gen);
-void                PrintMemoryUsage();
 
 int g_cameraX = 0;          // 카메라 X축 이동 누적값
 int g_cameraY = 0;          // 카메라 Y축 이동 누적값
@@ -22,7 +21,7 @@ bool g_isDragging = false;  // 마우스 왼쪽 버튼을 누르고 있는지 �
 POINT g_lastMousePos;       // 직전 마우스 커서의 위치 (이동 거리 계산용)
 
 // 전역 변수로 트리 객체 선언
-BinaryTree g_tree;
+RedBlackree g_tree;
 
 int test_count = 10000;
 int test_Loop_count = 0;

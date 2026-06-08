@@ -4,21 +4,31 @@
 #include <iostream>
 #include <string>
 
+enum NODE_COLOR
+{
+	BLACK = 0,
+	RED
+};
+
 struct Node
 {
+	Node* Parent;
 	Node* Left;
 	Node* Right;
 	int Data;
 
-	Node(int data) : Left(nullptr), Right(nullptr), Data(data) {}
+	NODE_COLOR Color;
+
+	Node() : Parent(nullptr), Left(nullptr), Right(nullptr), Data(NULL), Color(RED) {}
+	Node(int data) : Parent(nullptr), Left(nullptr), Right(nullptr), Data(data), Color(RED) {}
 };
 
-class BinaryTree
+class RedBlackree
 {
 
 public:
-	BinaryTree() noexcept;
-	virtual ~BinaryTree() noexcept;
+	RedBlackree() noexcept;
+	virtual ~RedBlackree() noexcept;
 
 	inline bool InsertNode(int data) noexcept; // 새로운 노드 삽입
 	inline void DeleteNode(int data) noexcept; // 검색한 데이터 삭제
@@ -35,38 +45,47 @@ public:
 
 private:
 	// InsertNode 내부에서 호출되는 재귀 함수 ( 위치 찾아서 노드 추가하는 함수 )
-	inline bool InsertNodeRecursive(Node* &currentnode, int data); // new는 예외를 던지기 때문에 noexcept 붙이면 안됨
+	inline bool InsertNodeRecursive(Node* currentnode, int data); // new는 예외를 던지기 때문에 noexcept 붙이면 안됨
 	// SearchNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 )
-	inline Node* FindNodeRecursive(Node* & currentNode, int data) noexcept;
+	inline Node* FindNodeRecursive(Node* currentNode, int data) noexcept;
 	// DeleteNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 & 삭제 & 후처리 )
-	inline void deleteNodeRecursive(Node* &currentNode, int data) noexcept;
+	inline void deleteNodeRecursive(Node* currentNode, int data) noexcept;
 	// DeleteAll 내부에서 호출되는 재귀 함수 ( 노드 후위 순회 )
-	inline void DeleteAllRecursive(Node* &currentNode) noexcept;
-	inline void PrintTree(Node* &currentNode) const noexcept; // 중위 순회를 통해서 정렬이 유지되고 있는지 이전 값과 비교해서 검증하는 함수
+	inline void DeleteAllRecursive(Node* currentNode) noexcept;
+	// 밸런스 함수
+	inline void InsertNodeBalance(Node* currentNode) noexcept;
+	inline void PrintTree(Node* currentNode) const noexcept; // 중위 순회를 통해서 정렬이 유지되고 있는지 이전 값과 비교해서 검증하는 함수
 
 	Node* RootNode;
+	Node* NilNode;
 	int NodeCount;
 };
 
-inline BinaryTree::BinaryTree() noexcept : NodeCount(0), RootNode(nullptr) {}
+inline RedBlackree::RedBlackree() noexcept : NodeCount(0), RootNode(nullptr)
+{
+	// 트리가 생성되면 한 개만 생성해서 모든 Nil노드를 가르키는 것이 하나의 Nil노드를 가르키게 되는 것
+	NilNode = new Node;
+	NilNode->Color = BLACK;
+}
 
-inline BinaryTree::~BinaryTree() noexcept
+inline RedBlackree::~RedBlackree() noexcept
 {
 	//Tree 전체 삭제
 	DeleteAll();
 }
 
-inline bool BinaryTree::InsertNode(int data) noexcept
+inline bool RedBlackree::InsertNode(int data) noexcept
 {
 	// 노드를 무한정 넣지 못하게 최대치를 설정해놔야 할듯
 	return InsertNodeRecursive(RootNode, data);
 }
 
-inline bool BinaryTree::InsertNodeRecursive(Node* &currentNode, int data) 
+inline bool RedBlackree::InsertNodeRecursive(Node* currentNode, int data)
 {
 	// 노드가 비어있다면 빈 자리에 노드 생성
 	if (currentNode == nullptr)
 	{
+		// 노드는 Red 노드로 항상 리프 노드에 삽입됨
 		currentNode = new Node(data);
 		return true;
 	}
@@ -84,15 +103,33 @@ inline bool BinaryTree::InsertNodeRecursive(Node* &currentNode, int data)
 	}
 
 	// 여기에 실행흐름이 온 것이면 같은 값을 넣은 것이므로 무시
-	return false;
+	if (currentNode->Data == data)
+	{
+		return false;
+	}
+	
+	// 삽입으로 인해서 레드 블랙 트리의 균형이 깨졌는지 체크하고 밸런싱
+	InsertNodeBalance(currentNode);
+	return true;
 }
 
-inline void BinaryTree::DeleteNode(int data) noexcept
+inline void RedBlackree::InsertNodeBalance(Node* currentNode) noexcept
+{
+
+	
+
+
+}
+
+
+
+
+inline void RedBlackree::DeleteNode(int data) noexcept
 {
 	deleteNodeRecursive(RootNode, data);
 }
 
-inline void BinaryTree::deleteNodeRecursive(Node* &currentNode, int data) noexcept
+inline void RedBlackree::deleteNodeRecursive(Node* currentNode, int data) noexcept
 {
 	// 노드가 비어있으면 리턴
 	if (currentNode == nullptr)
@@ -162,12 +199,12 @@ inline void BinaryTree::deleteNodeRecursive(Node* &currentNode, int data) noexce
 
 }
 
-inline Node* BinaryTree::SearchNode(int data) noexcept
+inline Node* RedBlackree::SearchNode(int data) noexcept
 {
 	return FindNodeRecursive(RootNode, data);
 }
 
-inline Node* BinaryTree::FindNodeRecursive(Node* &currentNode, int data) noexcept
+inline Node* RedBlackree::FindNodeRecursive(Node* currentNode, int data) noexcept
 {
 	// 검색한 노드가 존재하지 않으면 그 다음 노드 검색하도록 리턴
 	if (currentNode == nullptr)
@@ -195,13 +232,13 @@ inline Node* BinaryTree::FindNodeRecursive(Node* &currentNode, int data) noexcep
 	return nullptr;
 }
 
-inline bool BinaryTree::DeleteAll(void) noexcept // 트리 전체 삭제 ( 후위 순회 )
+inline bool RedBlackree::DeleteAll(void) noexcept // 트리 전체 삭제 ( 후위 순회 )
 {
 	DeleteAllRecursive(RootNode);
 	return false;
 }
 
-inline void BinaryTree::DeleteAllRecursive(Node* &currentNode) noexcept
+inline void RedBlackree::DeleteAllRecursive(Node* currentNode) noexcept
 {
 	if (currentNode == nullptr)
 	{
@@ -215,7 +252,7 @@ inline void BinaryTree::DeleteAllRecursive(Node* &currentNode) noexcept
 
 }
 
-inline void BinaryTree::PrintTree(Node* &currentNode) const noexcept // 트리 전체 출력 ( 중위 순회 )
+inline void RedBlackree::PrintTree(Node* currentNode) const noexcept // 트리 전체 출력 ( 중위 순회 )
 {
 
 	if (currentNode == nullptr)
@@ -230,7 +267,7 @@ inline void BinaryTree::PrintTree(Node* &currentNode) const noexcept // 트리 전�
 }
 
 // GDI 트리 그리기 재귀 함수
-inline void BinaryTree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffset, int yOffset) const noexcept
+inline void RedBlackree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffset, int yOffset) const noexcept
 {
 	if (node == nullptr)
 	{
@@ -272,12 +309,12 @@ inline void BinaryTree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffs
 	TextOutW(hdc, x, y + 5, strData.c_str(), strData.length());
 }
 
-inline Node* BinaryTree::GetRoot() const noexcept
+inline Node* RedBlackree::GetRoot() const noexcept
 { 
 	return RootNode; 
 }
 
-inline bool BinaryTree::VerifyBinarySortTree(Node* currentNode, int& prevvalue) noexcept
+inline bool RedBlackree::VerifyBinarySortTree(Node* currentNode, int& prevvalue) noexcept
 {
 
 	if (currentNode == nullptr)
@@ -307,3 +344,4 @@ inline bool BinaryTree::VerifyBinarySortTree(Node* currentNode, int& prevvalue) 
 	return true;
 
 }
+
