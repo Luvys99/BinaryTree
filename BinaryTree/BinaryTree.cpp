@@ -1,4 +1,5 @@
 ﻿#include "BinaryTree.h"
+#include "Profiler.h"
 #include <windows.h>
 #include <iostream>
 #include <random>
@@ -14,7 +15,6 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 
 void                StressTestFuc(std::mt19937& gen);
-void                PrintMemoryUsage();
 
 int g_cameraX = 0;          // 카메라 X축 이동 누적값
 int g_cameraY = 0;          // 카메라 Y축 이동 누적값
@@ -117,7 +117,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
 
         // 테스트시 활성화
-        // PostMessage(hWnd, WM_STRESS_TEST, 0, 0);
+        PostMessage(hWnd, WM_STRESS_TEST, 0, 0);
     }
     break;
     case WM_STRESS_TEST:
@@ -192,7 +192,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 void StressTestFuc(std::mt19937& gen)
 {
-
+    PROFILE
     std::uniform_int_distribution<int> dis(1, 100000);
     int testLoopCount = 10000;
 
