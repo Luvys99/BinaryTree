@@ -45,15 +45,15 @@ public:
 
 private:
 	// InsertNode 내부에서 호출되는 재귀 함수 ( 위치 찾아서 노드 추가하는 함수 )
-	inline bool InsertNodeRecursive(Node* currentnode, int data); // new는 예외를 던지기 때문에 noexcept 붙이면 안됨
+	inline bool InsertNodeRecursive(Node* &currentNode, Node* parentNode, int data); // new는 예외를 던지기 때문에 noexcept 붙이면 안됨
 	// SearchNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 )
 	inline Node* FindNodeRecursive(Node* currentNode, int data) noexcept;
 	// DeleteNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 & 삭제 & 후처리 )
-	inline void deleteNodeRecursive(Node* currentNode, int data) noexcept;
+	inline void deleteNodeRecursive(Node* &currentNode, int data) noexcept;
 	// DeleteAll 내부에서 호출되는 재귀 함수 ( 노드 후위 순회 )
-	inline void DeleteAllRecursive(Node* currentNode) noexcept;
+	inline void DeleteAllRecursive(Node* &currentNode) noexcept;
 	// 밸런스 함수
-	inline void InsertNodeBalance(Node* currentNode) noexcept;
+	inline void InsertNodeBalance(Node* &currentNode, Node* parentNode) noexcept;
 	inline void PrintTree(Node* currentNode) const noexcept; // 중위 순회를 통해서 정렬이 유지되고 있는지 이전 값과 비교해서 검증하는 함수
 
 	Node* RootNode;
@@ -61,11 +61,12 @@ private:
 	int NodeCount;
 };
 
-inline RedBlackree::RedBlackree() noexcept : NodeCount(0), RootNode(nullptr)
+inline RedBlackree::RedBlackree() noexcept : NodeCount(0)
 {
 	// 트리가 생성되면 한 개만 생성해서 모든 Nil노드를 가르키는 것이 하나의 Nil노드를 가르키게 되는 것
 	NilNode = new Node;
 	NilNode->Color = BLACK;
+	RootNode = NilNode;
 }
 
 inline RedBlackree::~RedBlackree() noexcept
@@ -76,48 +77,105 @@ inline RedBlackree::~RedBlackree() noexcept
 
 inline bool RedBlackree::InsertNode(int data) noexcept
 {
-	// 노드를 무한정 넣지 못하게 최대치를 설정해놔야 할듯
-	return InsertNodeRecursive(RootNode, data);
+	if (RootNode == nullptr)
+	{
+		RootNode = new Node(data);
+		RootNode->Color = BLACK;
+		RootNode->Left = NilNode;
+		RootNode->Right = NilNode;
+		return true;
+	}
+
+	return InsertNodeRecursive(RootNode, nullptr, data);
 }
 
-inline bool RedBlackree::InsertNodeRecursive(Node* currentNode, int data)
+inline bool RedBlackree::InsertNodeRecursive(Node* &currentNode, Node* parentNode, int data)
 {
 	// 노드가 비어있다면 빈 자리에 노드 생성
 	if (currentNode == nullptr)
 	{
-		// 노드는 Red 노드로 항상 리프 노드에 삽입됨
+		// 노드는 Red 노드로 항상 리프 노드에 삽입됨, 항상 Left, Right에 NilNode 가르키도록 함
 		currentNode = new Node(data);
+		currentNode->Parent = parentNode;
+		currentNode->Left = NilNode;
+		currentNode->Right = NilNode;
+
+		// 삽입으로 인해서 레드 블랙 트리의 균형이 깨졌는지 체크하고 밸런싱
+		// 부모가 RED만 아니면 밸런스 로직을 거칠 필요가 없음
+		if (currentNode->Parent->Color == RED)
+		{
+			InsertNodeBalance(currentNode, currentNode->Parent);
+		}
 		return true;
 	}
 	
 	// 노드가 존재한다면 왼쪽, 오른쪽 방향을 결정해서 재귀 호출
 	if (currentNode->Data > data)
 	{
-		InsertNodeRecursive(currentNode->Left, data);
+		InsertNodeRecursive(currentNode->Left, currentNode, data);
 		return true;
 	}
 	else if (currentNode->Data < data)
 	{
-		InsertNodeRecursive(currentNode->Right, data);
+		InsertNodeRecursive(currentNode->Right, currentNode, data);
 		return true;
 	}
-
-	// 여기에 실행흐름이 온 것이면 같은 값을 넣은 것이므로 무시
-	if (currentNode->Data == data)
-	{
-		return false;
-	}
 	
-	// 삽입으로 인해서 레드 블랙 트리의 균형이 깨졌는지 체크하고 밸런싱
-	InsertNodeBalance(currentNode);
-	return true;
+	return false;
 }
 
-inline void RedBlackree::InsertNodeBalance(Node* currentNode) noexcept
+inline void RedBlackree::InsertNodeBalance(Node* &currentNode, Node* parentNode) noexcept
 {
+	// 레드 레드 문제가 해결되었기 때문에 리턴
+	if (currentNode->Parent->Color == BLACK)
+	{
+		return;
+	}
 
-	
+	// 무조건 부모가 레드인 상태 그리고 할아버지, 삼촌 노드가 존재하는 상황이다 ( 레드, 레드 상황 )
+	Node* grandParentNode = parentNode->Parent;
+	Node* uncleNode = nullptr; // Nil일수도 있고 할아버지의 왼쪽, 오른쪽 자식인지 확인해야 함
 
+	// 부모가 왼쪽 자식이면 삼촌은 오른쪽 자식
+	if (grandParentNode->Left == parentNode)
+	{
+		uncleNode = grandParentNode->Right;
+	}
+	// 부모가 오른쪽 자식이면 삼촌은 왼쪽 자식
+	else if (grandParentNode->Right == parentNode)
+	{
+		uncleNode = grandParentNode->Left;
+	}
+
+	// 부모는 레드 확정 삼촌이 Nil노드인지, BlACK 노드인지 확인( 같은 블랙노드라서 경우가 같음 )
+	if (uncleNode == NilNode || uncleNode->Color == BLACK)
+	{
+		//회전
+		if (uncleNode == grandParentNode->Left)
+		{
+			// 할아버지 기준 우회전
+
+		}
+		else if (uncleNode == grandParentNode->Right)
+		{
+			// 할아버지 기준 좌회전
+
+		}
+
+		// 회전 이후에는 종료
+		return;
+	}
+	// 삼촌이 레드인 경우
+	else if (uncleNode->Color == RED)
+	{
+		// 노드 색상 변경
+		currentNode->Parent->Color = BLACK;
+		uncleNode->Color = BLACK;
+		grandParentNode->Color = RED;
+
+		InsertNodeBalance(grandParentNode, grandParentNode->Parent);
+
+	}
 
 }
 
@@ -129,7 +187,7 @@ inline void RedBlackree::DeleteNode(int data) noexcept
 	deleteNodeRecursive(RootNode, data);
 }
 
-inline void RedBlackree::deleteNodeRecursive(Node* currentNode, int data) noexcept
+inline void RedBlackree::deleteNodeRecursive(Node* &currentNode, int data) noexcept
 {
 	// 노드가 비어있으면 리턴
 	if (currentNode == nullptr)
@@ -238,7 +296,7 @@ inline bool RedBlackree::DeleteAll(void) noexcept // 트리 전체 삭제 ( 후위 순회 
 	return false;
 }
 
-inline void RedBlackree::DeleteAllRecursive(Node* currentNode) noexcept
+inline void RedBlackree::DeleteAllRecursive(Node* &currentNode) noexcept
 {
 	if (currentNode == nullptr)
 	{
@@ -296,6 +354,20 @@ inline void RedBlackree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOff
 
 	// 2. 현재 노드의 '원(Circle)'을 그립니다.
 	int radius = 15; // 원의 반지름
+	HBRUSH hNodeBrush;
+
+	if (node->Color == RED)
+	{
+		hNodeBrush = CreateSolidBrush(RGB(255, 100, 100)); // 가독성 좋은 연한 빨간색
+	}
+	else
+	{
+		hNodeBrush = CreateSolidBrush(RGB(80, 80, 80)); // 짙은 회색 (완전 검정이면 선이 안 보일 수 있음)
+	}
+
+	// 생성한 브러시를 DC에 적용하고 기존 브러시 백업
+	HBRUSH hOldBrush = (HBRUSH)SelectObject(hdc, hNodeBrush);
+	
 	// 기본 펜(검정)과 브러시(흰색)로 내부가 채워진 원이 그려집니다.
 	Ellipse(hdc, x - radius, y - radius, x + radius, y + radius);
 
@@ -305,8 +377,16 @@ inline void RedBlackree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOff
 	SetBkMode(hdc, TRANSPARENT); // 텍스트 배경을 투명하게 (원 색상을 가리지 않게)
 	SetTextAlign(hdc, TA_CENTER | TA_BASELINE); // 텍스트를 좌표의 정중앙에 정렬
 
+	// 어두운 배경(빨강, 회색) 위에서도 글씨가 잘 보이도록 텍스트 색상을 흰색으로 변경
+	COLORREF oldTextColor = SetTextColor(hdc, RGB(255, 255, 255));
+
 	// y 좌표를 살짝 보정하여 원의 중앙에 오도록 맞춤
 	TextOutW(hdc, x, y + 5, strData.c_str(), strData.length());
+
+	// 4. (매우 중요) 사용한 GDI 리소스 원상복구 및 메모리 해제
+	SetTextColor(hdc, oldTextColor); // 글자색 원래대로 복구
+	SelectObject(hdc, hOldBrush);    // 브러시 원래대로 복구
+	DeleteObject(hNodeBrush);        // ★ 생성했던 색상 브러시 삭제 (메모리 누수 방지)
 }
 
 inline Node* RedBlackree::GetRoot() const noexcept
