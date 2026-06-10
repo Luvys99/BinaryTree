@@ -24,7 +24,7 @@ bool g_isDragging = false;  // 마우스 왼쪽 버튼을 누르고 있는지 �
 POINT g_lastMousePos;       // 직전 마우스 커서의 위치 (이동 거리 계산용)
 
 // 전역 변수로 트리 객체 선언
-RedBlackree g_tree;
+RedBlacktree g_tree;
 
 int test_count = 10000;
 int test_Loop_count = 0;

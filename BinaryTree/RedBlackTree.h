@@ -23,12 +23,12 @@ struct Node
 	Node(int data) : Parent(nullptr), Left(nullptr), Right(nullptr), Data(data), Color(RED) {}
 };
 
-class RedBlackree
+class RedBlacktree
 {
 
 public:
-	RedBlackree() noexcept;
-	virtual ~RedBlackree() noexcept;
+	RedBlacktree() noexcept;
+	virtual ~RedBlacktree() noexcept;
 
 	inline bool InsertNode(int data) noexcept; // 새로운 노드 삽입
 	inline void DeleteNode(int data) noexcept; // 검색한 데이터 삭제
@@ -54,6 +54,9 @@ private:
 	inline void DeleteAllRecursive(Node* &currentNode) noexcept;
 	// 밸런스 함수
 	inline void InsertNodeBalance(Node* &currentNode, Node* parentNode) noexcept;
+	// 밸런스 회전 함수
+	inline void LeftRotate(Node* &currentNode);
+	inline void RightRotate(Node*& currentNode);
 	inline void PrintTree(Node* currentNode) const noexcept; // 중위 순회를 통해서 정렬이 유지되고 있는지 이전 값과 비교해서 검증하는 함수
 
 	Node* RootNode;
@@ -61,38 +64,47 @@ private:
 	int NodeCount;
 };
 
-inline RedBlackree::RedBlackree() noexcept : NodeCount(0)
+inline RedBlacktree::RedBlacktree() noexcept : NodeCount(0)
 {
 	// 트리가 생성되면 한 개만 생성해서 모든 Nil노드를 가르키는 것이 하나의 Nil노드를 가르키게 되는 것
 	NilNode = new Node;
 	NilNode->Color = BLACK;
-	RootNode = NilNode;
+	RootNode = nullptr;
 }
 
-inline RedBlackree::~RedBlackree() noexcept
+inline RedBlacktree::~RedBlacktree() noexcept
 {
 	//Tree 전체 삭제
 	DeleteAll();
 }
 
-inline bool RedBlackree::InsertNode(int data) noexcept
+inline bool RedBlacktree::InsertNode(int data) noexcept
 {
 	if (RootNode == nullptr)
 	{
 		RootNode = new Node(data);
 		RootNode->Color = BLACK;
+		RootNode->Parent = NilNode;
 		RootNode->Left = NilNode;
 		RootNode->Right = NilNode;
 		return true;
 	}
 
-	return InsertNodeRecursive(RootNode, nullptr, data);
+	bool ret = InsertNodeRecursive(RootNode, nullptr, data);
+	
+	// 루트는 무조건 블랙으로 마지막에 칠해줌
+	if (RootNode != NilNode)
+	{
+		RootNode->Color = BLACK;
+	}
+
+	return ret;
 }
 
-inline bool RedBlackree::InsertNodeRecursive(Node* &currentNode, Node* parentNode, int data)
+inline bool RedBlacktree::InsertNodeRecursive(Node* &currentNode, Node* parentNode, int data)
 {
 	// 노드가 비어있다면 빈 자리에 노드 생성
-	if (currentNode == nullptr)
+	if (currentNode == NilNode)
 	{
 		// 노드는 Red 노드로 항상 리프 노드에 삽입됨, 항상 Left, Right에 NilNode 가르키도록 함
 		currentNode = new Node(data);
@@ -124,8 +136,15 @@ inline bool RedBlackree::InsertNodeRecursive(Node* &currentNode, Node* parentNod
 	return false;
 }
 
-inline void RedBlackree::InsertNodeBalance(Node* &currentNode, Node* parentNode) noexcept
+inline void RedBlacktree::InsertNodeBalance(Node* &currentNode, Node* parentNode) noexcept
 {
+	// 색상 변경 이후에 재귀할 때 루트노드라면 블랙으로 변경해주고 끝
+	if (currentNode == RootNode)
+	{
+		currentNode->Color = BLACK;
+		return;
+	}
+
 	// 레드 레드 문제가 해결되었기 때문에 리턴
 	if (currentNode->Parent->Color == BLACK)
 	{
@@ -134,7 +153,7 @@ inline void RedBlackree::InsertNodeBalance(Node* &currentNode, Node* parentNode)
 
 	// 무조건 부모가 레드인 상태 그리고 할아버지, 삼촌 노드가 존재하는 상황이다 ( 레드, 레드 상황 )
 	Node* grandParentNode = parentNode->Parent;
-	Node* uncleNode = nullptr; // Nil일수도 있고 할아버지의 왼쪽, 오른쪽 자식인지 확인해야 함
+	Node* uncleNode = NilNode; // Nil일수도 있고 할아버지의 왼쪽, 오른쪽 자식인지 확인해야 함
 
 	// 부모가 왼쪽 자식이면 삼촌은 오른쪽 자식
 	if (grandParentNode->Left == parentNode)
@@ -150,16 +169,56 @@ inline void RedBlackree::InsertNodeBalance(Node* &currentNode, Node* parentNode)
 	// 부모는 레드 확정 삼촌이 Nil노드인지, BlACK 노드인지 확인( 같은 블랙노드라서 경우가 같음 )
 	if (uncleNode == NilNode || uncleNode->Color == BLACK)
 	{
-		//회전
+		// 삼촌이 왼쪽 자식이라는 것은 부모가 오른쪽 자식이라는 것
 		if (uncleNode == grandParentNode->Left)
 		{
-			// 할아버지 기준 우회전
+			// 삽입된 노드가 부모의 왼쪽 노드라면? ( LR )
+			if (currentNode == parentNode->Left)
+			{
+				// LR 케이스를 우회전을 통해서 LL로 만들었음
+				RightRotate(parentNode);
 
+				// LL 케이스 처리 ( 할아버지 기준 좌회전 )
+				currentNode->Color = BLACK;
+				grandParentNode->Color = RED;
+				LeftRotate(grandParentNode);
+			}
+			else // ( 원래 LL 이라면? )
+			{
+				// 색상 변경 후 회전 ( LL )
+				parentNode->Color = BLACK;
+				grandParentNode->Color = RED;
+
+				// 할아버지 기준 좌회전
+				LeftRotate(grandParentNode);
+			}
+			
 		}
+		// 삼촌이 오른쪽 자식이면 부모가 왼쪽 자식임
 		else if (uncleNode == grandParentNode->Right)
 		{
-			// 할아버지 기준 좌회전
+			// 삽입 노드가 부모의 오른쪽 자식이라면? ( RL )
+			if (currentNode == parentNode->Right)
+			{
+				// RL 케이스를 좌회전을 통해서 RR 케이스 만듬
+				LeftRotate(parentNode);
+				
+				// RR 케이스 처리 ( 할아버지 기준 우회전 )
+				currentNode->Color = BLACK;
+				grandParentNode->Color = RED;
+				RightRotate(grandParentNode);
 
+			}
+			else
+			{
+				// 색상 변경 후 회전 ( RR )
+				parentNode->Color = BLACK;
+				grandParentNode->Color = RED;
+
+				// 할아버지 기준 우회전
+				RightRotate(grandParentNode);
+			}
+			
 		}
 
 		// 회전 이후에는 종료
@@ -179,18 +238,94 @@ inline void RedBlackree::InsertNodeBalance(Node* &currentNode, Node* parentNode)
 
 }
 
+inline void RedBlacktree::LeftRotate(Node*& currentNode)
+{
+	Node* grandparentNode = currentNode;
+	Node* parentNode = currentNode->Right;
 
+	// 1. 고아 노드를 할아버지 왼쪽으로 보냄
+	grandparentNode->Right = parentNode->Left;
 
+	if (grandparentNode->Right != NilNode)
+	{
+		grandparentNode->Right->Parent = grandparentNode;
+	}
 
-inline void RedBlackree::DeleteNode(int data) noexcept
+	// 2. 부모 노드가 올라가면서 부모 노드의 부모를 증조부와 연결함
+	// 1) 할아버지의 부모와 부모 노드와 연결
+	parentNode->Parent = grandparentNode->Parent;
+
+	// 2) 증조부가 존재하지 않으면 부모 노드가 루트 노드라는 것
+	if (grandparentNode->Parent == NilNode )
+	{
+		RootNode = parentNode;
+	}
+	// 3) 증조부 존재하고 할아버지 노드가 증조부의 왼쪽 노드라면?
+	else if (grandparentNode == grandparentNode->Parent->Left)
+	{
+		grandparentNode->Parent->Left = parentNode;
+	}
+	// 4) 증조부 존재하고 할아버지 노드가 증조부의 오른쪽 노드였다면
+	else if (grandparentNode == grandparentNode->Parent->Right)
+	{
+		grandparentNode->Parent->Right = parentNode;
+	}
+
+	// 3. 부모의 오른쪽 자식에 할아버지 노드를 연결, 할아버지의 부모를 부모 노드로 연결
+	parentNode->Left = grandparentNode;
+	grandparentNode->Parent = parentNode;
+
+}
+
+inline void RedBlacktree::RightRotate(Node*& currentNode)
+{
+
+	Node* grandparentNode = currentNode;
+	Node* parentNode = currentNode->Left;
+
+	// 1. 고아 노드를 할아버지 오른쪽으로 보냄
+	grandparentNode->Left = parentNode->Right;
+	
+	if (grandparentNode->Left != NilNode)
+	{
+		grandparentNode->Left->Parent = grandparentNode;
+	}
+
+	// 2. 부모 노드가 올라가고 할아버지 노드가 부모 노드의 오른쪽 자식 노드로 내려옴
+	// 1) 할아버지의 부모와 부모 노드와 연결
+	parentNode->Parent = grandparentNode->Parent;
+
+	// 2) 증조부가 존재하지 않으면 부모 노드가 루트 노드라는 것
+	if (grandparentNode->Parent == NilNode)
+	{
+		RootNode = parentNode;
+	}
+	// 3) 증조북 존재하고 할아버지 노드가 증조부의 왼쪽 노드라면?
+	else if (grandparentNode == grandparentNode->Parent->Left)
+	{
+		grandparentNode->Parent->Left = parentNode;
+	}
+	// 4) 증조부 존재하고 할아버지 노드가 증조부의 오른쪽 노드였다면
+	else if (grandparentNode == grandparentNode->Parent->Right)
+	{
+		grandparentNode->Parent->Right = parentNode;
+	}
+	
+	// 3. 부모의 오른쪽 자식에 할아버지 노드를 연결, 할아버지의 부모를 부모 노드로 연결
+	parentNode->Right = grandparentNode;
+	grandparentNode->Parent = parentNode;
+
+}
+
+inline void RedBlacktree::DeleteNode(int data) noexcept
 {
 	deleteNodeRecursive(RootNode, data);
 }
 
-inline void RedBlackree::deleteNodeRecursive(Node* &currentNode, int data) noexcept
+inline void RedBlacktree::deleteNodeRecursive(Node* &currentNode, int data) noexcept
 {
 	// 노드가 비어있으면 리턴
-	if (currentNode == nullptr)
+	if (currentNode == NilNode)
 	{
 		// std::cout << "Empty Tree" << "\n";
 		return;
@@ -257,15 +392,15 @@ inline void RedBlackree::deleteNodeRecursive(Node* &currentNode, int data) noexc
 
 }
 
-inline Node* RedBlackree::SearchNode(int data) noexcept
+inline Node* RedBlacktree::SearchNode(int data) noexcept
 {
 	return FindNodeRecursive(RootNode, data);
 }
 
-inline Node* RedBlackree::FindNodeRecursive(Node* currentNode, int data) noexcept
+inline Node* RedBlacktree::FindNodeRecursive(Node* currentNode, int data) noexcept
 {
 	// 검색한 노드가 존재하지 않으면 그 다음 노드 검색하도록 리턴
-	if (currentNode == nullptr)
+	if (currentNode == NilNode || currentNode == nullptr)
 	{
 		//std::cout << "can't find data" << "\n";
 		return nullptr;
@@ -290,15 +425,15 @@ inline Node* RedBlackree::FindNodeRecursive(Node* currentNode, int data) noexcep
 	return nullptr;
 }
 
-inline bool RedBlackree::DeleteAll(void) noexcept // 트리 전체 삭제 ( 후위 순회 )
+inline bool RedBlacktree::DeleteAll(void) noexcept // 트리 전체 삭제 ( 후위 순회 )
 {
 	DeleteAllRecursive(RootNode);
 	return false;
 }
 
-inline void RedBlackree::DeleteAllRecursive(Node* &currentNode) noexcept
+inline void RedBlacktree::DeleteAllRecursive(Node* &currentNode) noexcept
 {
-	if (currentNode == nullptr)
+	if (currentNode == NilNode || currentNode == nullptr)
 	{
 		return;
 	}
@@ -310,10 +445,10 @@ inline void RedBlackree::DeleteAllRecursive(Node* &currentNode) noexcept
 
 }
 
-inline void RedBlackree::PrintTree(Node* currentNode) const noexcept // 트리 전체 출력 ( 중위 순회 )
+inline void RedBlacktree::PrintTree(Node* currentNode) const noexcept // 트리 전체 출력 ( 중위 순회 )
 {
 
-	if (currentNode == nullptr)
+	if (currentNode == NilNode)
 	{
 		return;
 	}
@@ -325,7 +460,7 @@ inline void RedBlackree::PrintTree(Node* currentNode) const noexcept // 트리 전�
 }
 
 // GDI 트리 그리기 재귀 함수
-inline void RedBlackree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffset, int yOffset) const noexcept
+inline void RedBlacktree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffset, int yOffset) const noexcept
 {
 	if (node == nullptr)
 	{
@@ -389,15 +524,15 @@ inline void RedBlackree::DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOff
 	DeleteObject(hNodeBrush);        // ★ 생성했던 색상 브러시 삭제 (메모리 누수 방지)
 }
 
-inline Node* RedBlackree::GetRoot() const noexcept
+inline Node* RedBlacktree::GetRoot() const noexcept
 { 
 	return RootNode; 
 }
 
-inline bool RedBlackree::VerifyBinarySortTree(Node* currentNode, int& prevvalue) noexcept
+inline bool RedBlacktree::VerifyBinarySortTree(Node* currentNode, int& prevvalue) noexcept
 {
 
-	if (currentNode == nullptr)
+	if (currentNode == NilNode)
 	{
 		return true;
 	}
