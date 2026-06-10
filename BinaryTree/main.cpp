@@ -1,4 +1,6 @@
 ﻿#include "RedBlackTree.h"
+#include "RedBlackTreeGDI.h"
+#include "Globals.h"
 #include <windows.h>
 #include <iostream>
 #include <random>
@@ -16,18 +18,6 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 
-void                StressTestFuc(std::mt19937& gen);
-
-int g_cameraX = 0;          // 카메라 X축 이동 누적값
-int g_cameraY = 0;          // 카메라 Y축 이동 누적값
-bool g_isDragging = false;  // 마우스 왼쪽 버튼을 누르고 있는지 여부
-POINT g_lastMousePos;       // 직전 마우스 커서의 위치 (이동 거리 계산용)
-
-// 전역 변수로 트리 객체 선언
-RedBlacktree g_tree;
-
-int test_count = 10000;
-int test_Loop_count = 0;
 
 int main()
 {
@@ -136,7 +126,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         */
     }
     break;
-    case WM_STRESS_TEST:
+    /*case WM_STRESS_TEST:
     {
         // 5번의 삭제와 5번의 삽입
         // 삭제와, 삽입 이후에 정확하게 정렬되어 있는지 검증
@@ -147,6 +137,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         break;
     }
+    */
     // 추가된 버튼 클릭 처리 부분
     case WM_COMMAND:
     {
@@ -224,7 +215,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         // 화면 가로 500, 세로 50 위치를 Root로 잡고 그리기 시작
         // 자식으로 갈때마다 X는 150씩 좁아지고, Y는 70씩 내려감
-        g_tree.DrawTreeGDI(hdc, g_tree.GetRoot(), startX, startY, initialXOffset, 70);
+        DrawTreeGDI(hdc, g_tree.GetRoot(), startX, startY, initialXOffset, 70);
 
         EndPaint(hWnd, &ps);
     }
@@ -241,60 +232,3 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return 0;
 }
-
-void StressTestFuc(std::mt19937& gen)
-{
-
-    std::uniform_int_distribution<int> dis(1, 100000);
-    int testLoopCount = 10000;
-
-    for (int i = 0; i < testLoopCount; i++)
-    {
-        std::vector<int> targetToDelete;
-
-        //5개의 삭제할 랜덤한 노드의 정수를 저장할 때까지
-        while (targetToDelete.size() < 5)
-        {
-
-            int randomvalue1 = dis(gen);
-
-            if (g_tree.SearchNode(randomvalue1) != nullptr)
-            {
-                targetToDelete.push_back(randomvalue1);
-            }
-
-        }
-
-        // 찾은 5개의 정수 삭제
-        for (int value : targetToDelete)
-        {
-            g_tree.DeleteNode(value);
-        }
-
-        // 5개의 랜덤 함수 삽입
-        int count = 0;
-        while (count < 5)
-        {
-            int randomvalue2 = dis(gen);
-
-            // 랜덤한 값이 정상적으로 삽입되었으면 count++, 없으면 다음 루프
-            if (g_tree.InsertNode(randomvalue2) != false)
-            {
-                count++;
-            }
-        }
-
-        // 검증 중위순회를 통해서 값들이 삭제, 삽입에도 정렬이 보장되는지
-        int prevvalue = -1; // 최소값보다 작은 값중에서도 가장 큰 값
-        if (g_tree.VerifyBinarySortTree(g_tree.GetRoot(), prevvalue) == false)
-        {
-            std::cout << "test failed!! " << i << " Loop error" << "\n";
-            return;
-        }
-
-        
-    }
-    test_Loop_count++;
-    std::cout << "test success!! " << "Loop Count : " << test_Loop_count << "\n";
-}
-
