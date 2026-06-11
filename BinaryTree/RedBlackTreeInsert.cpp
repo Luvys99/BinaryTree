@@ -23,6 +23,7 @@ bool RedBlacktree::InsertNode(int data) noexcept
 	return ret;
 }
 
+// 삽입할 때 값의 자리에 맞는 빈 노드를 찾고 부모노드와 연결하기 위해서 인자로 부모노드를 전달해야 함
 bool RedBlacktree::InsertNodeRecursive(Node*& currentNode, Node* parentNode, int data)
 {
 	// 노드가 비어있다면 빈 자리에 노드 생성
@@ -38,7 +39,7 @@ bool RedBlacktree::InsertNodeRecursive(Node*& currentNode, Node* parentNode, int
 		// 부모가 RED만 아니면 밸런스 로직을 거칠 필요가 없음
 		if (currentNode->Parent->Color == RED)
 		{
-			InsertNodeBalance(currentNode, currentNode->Parent);
+			InsertNodeBalance(currentNode);
 		}
 		return true;
 	}
@@ -58,7 +59,7 @@ bool RedBlacktree::InsertNodeRecursive(Node*& currentNode, Node* parentNode, int
 	return false;
 }
 
-void RedBlacktree::InsertNodeBalance(Node* currentNode, Node* parentNode) noexcept
+void RedBlacktree::InsertNodeBalance(Node* currentNode) noexcept
 {
 	// 색상 변경 이후에 재귀할 때 루트노드라면 블랙으로 변경해주고 끝
 	if (currentNode == RootNode)
@@ -74,6 +75,7 @@ void RedBlacktree::InsertNodeBalance(Node* currentNode, Node* parentNode) noexce
 	}
 
 	// 무조건 부모가 레드인 상태 그리고 할아버지, 삼촌 노드가 존재하는 상황이다 ( 레드, 레드 상황 )
+	Node* parentNode = currentNode->Parent;
 	Node* grandParentNode = parentNode->Parent;
 	Node* uncleNode = NilNode; // Nil일수도 있고 할아버지의 왼쪽, 오른쪽 자식인지 확인해야 함
 
@@ -154,7 +156,7 @@ void RedBlacktree::InsertNodeBalance(Node* currentNode, Node* parentNode) noexce
 		uncleNode->Color = BLACK;
 		grandParentNode->Color = RED;
 
-		InsertNodeBalance(grandParentNode, grandParentNode->Parent);
+		InsertNodeBalance(grandParentNode);
 
 	}
 
@@ -193,7 +195,7 @@ void RedBlacktree::LeftRotate(Node* currentNode) noexcept
 		grandparentNode->Parent->Right = parentNode;
 	}
 
-	// 3. 부모의 오른쪽 자식에 할아버지 노드를 연결, 할아버지의 부모를 부모 노드로 연결
+	// 3. 부모의 왼쪽 자식에 할아버지 노드를 연결, 할아버지의 부모를 부모 노드로 연결
 	parentNode->Left = grandparentNode;
 	grandparentNode->Parent = parentNode;
 

@@ -2,7 +2,7 @@
 #include "RedBlackTree.h"
 #include <windows.h>
 
-//C++ 17부터 허용되는 문법 extern 대신 inline ( 선언과 초기화를 동시에 함 )
+// C++ 17부터 허용되는 문법 extern 대신 inline ( 선언과 초기화를 동시에 함 )
 
 inline int g_cameraX = 0;          // 카메라 X축 이동 누적값
 inline int g_cameraY = 0;          // 카메라 Y축 이동 누적값

@@ -45,17 +45,26 @@ public:
 private:
 	// InsertNode 내부에서 호출되는 재귀 함수 ( 위치 찾아서 노드 추가하는 함수 )
 	bool InsertNodeRecursive(Node* &currentNode, Node* parentNode, int data); // new는 예외를 던지기 때문에 noexcept 붙이면 안됨
+
 	// SearchNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 )
 	inline Node* FindNodeRecursive(Node* currentNode, int data) noexcept;
+
 	// DeleteNode 내부에서 호출되는 재귀 함수 ( 노드 찾기 & 삭제 & 후처리 )
 	void deleteNodeRecursive(Node* &currentNode, int data) noexcept;
+
 	// DeleteAll 내부에서 호출되는 재귀 함수 ( 노드 후위 순회 )
 	inline void DeleteAllRecursive(Node* &currentNode) noexcept;
-	// 밸런스 함수
-	void InsertNodeBalance(Node* currentNode, Node* parentNode) noexcept;
-	// 밸런스 회전 함수
+
+	// 삽입 밸런스 함수
+	void InsertNodeBalance(Node* currentNode) noexcept;
+	// 삽입 회전 함수
 	void LeftRotate(Node* currentNode) noexcept;
 	void RightRotate(Node* currentNode) noexcept;
+
+	// 삭제 밸런스 함수
+	void DeleteNodeBalance(Node* currentNode) noexcept;
+	
+	
 	inline void PrintTree(Node* currentNode) const noexcept; // 중위 순회를 통해서 정렬이 유지되고 있는지 이전 값과 비교해서 검증하는 함수
 
 	Node* RootNode;
