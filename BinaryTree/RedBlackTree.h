@@ -19,8 +19,6 @@ struct Node
 
 	NODE_COLOR Color;
 
-	Node() : Parent(nullptr), Left(nullptr), Right(nullptr), Data(NULL), Color(RED) {}
-	Node(int data) : Parent(nullptr), Left(nullptr), Right(nullptr), Data(data), Color(RED) {}
 };
 
 class RedBlacktree
@@ -38,9 +36,12 @@ public:
 
 	// DrawTreeGDI 함수 호출할 때 Node로 넘기기 위함
 	inline Node* GetRoot() const noexcept;
+	inline Node* GetNil() const noexcept;
 
-	// 정렬 상태 검증 함수
-	bool VerifyBinarySortTree(Node* currentNode, int& prevvalue) noexcept;
+	// 레드블랙트리 규칙을 잘 지켜지는지 확인하는 검증 함수
+	bool VerifyRedBlackTree()  noexcept;
+	bool CheckRedBlackeTreeRulesRecursive(Node* currentNode, int& prevvalue, int currentBlackDepth, int& refBlackDepth) noexcept;
+
 
 private:
 	// InsertNode 내부에서 호출되는 재귀 함수 ( 위치 찾아서 노드 추가하는 함수 )
@@ -77,7 +78,10 @@ inline RedBlacktree::RedBlacktree() : NodeCount(0)
 	// 트리가 생성되면 한 개만 생성해서 모든 Nil노드를 가르키는 것이 하나의 Nil노드를 가르키게 되는 것
 	NilNode = new Node;
 	NilNode->Color = BLACK;
-	RootNode = nullptr;
+	NilNode->Parent = NilNode;
+	NilNode->Left = NilNode;
+	NilNode->Right = NilNode;
+	RootNode = NilNode;
 }
 
 inline RedBlacktree::~RedBlacktree() noexcept
@@ -90,6 +94,12 @@ inline Node* RedBlacktree::GetRoot() const noexcept
 {
 	return RootNode;
 }
+
+inline Node* RedBlacktree::GetNil() const noexcept
+{
+	return NilNode;
+}
+
 
 inline Node* RedBlacktree::SearchNode(int data) noexcept
 {

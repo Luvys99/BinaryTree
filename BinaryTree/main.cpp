@@ -1,6 +1,7 @@
 ﻿#include "RedBlackTree.h"
 #include "RedBlackTreeGDI.h"
 #include "Globals.h"
+#include "RedBlackTreeTest.h"
 #include <windows.h>
 #include <iostream>
 #include <random>
@@ -114,19 +115,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         CreateWindowW(L"BUTTON", L"Delete", WS_CHILD | WS_VISIBLE,
             210, 10, 80, 25, hWnd, (HMENU)IDC_BTN_DELETE, NULL, NULL);
 
-
-
         // 생성하자마자 테스트를 위함
-        /*for (int i = 0; i < 10000; i++)
+        for (int i = 0; i < 10000; i++)
         {
             g_tree.InsertNode(dis(gen));
         }
         // 테스트시 활성화
         PostMessage(hWnd, WM_STRESS_TEST, 0, 0);
-        */
+        
     }
     break;
-    /*case WM_STRESS_TEST:
+    case WM_STRESS_TEST:
     {
         // 5번의 삭제와 5번의 삽입
         // 삭제와, 삽입 이후에 정확하게 정렬되어 있는지 검증
@@ -137,7 +136,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
         break;
     }
-    */
     // 추가된 버튼 클릭 처리 부분
     case WM_COMMAND:
     {

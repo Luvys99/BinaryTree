@@ -1,16 +1,20 @@
 #include "RedBlackTreeGDI.h"
+#include "RedBlackTree.h"
+#include "Globals.h"
 
 // GDI 트리 그리기 재귀 함수
 void DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffset, int yOffset) noexcept
 {
-    if (node == nullptr)
+    Node* NilNode = g_tree.GetNil();
+
+    if (node == NilNode)
     {
         return;
     }
 
     // 1. 자식 노드로 향하는 '선(Edge)'을 먼저 그립니다.
     // 선을 먼저 그려야 나중에 그리는 '원(노드)' 뒤로 선이 깔끔하게 숨겨집니다.
-    if (node->Left != nullptr)
+    if (node->Left != NilNode)
     {
         MoveToEx(hdc, x, y, nullptr); // 현재 위치에서
         LineTo(hdc, x - xOffset, y + yOffset); // 왼쪽 아래로 선 긋기
@@ -19,7 +23,7 @@ void DrawTreeGDI(HDC hdc, Node* node, int x, int y, int xOffset, int yOffset) no
         DrawTreeGDI(hdc, node->Left, x - xOffset, y + yOffset, xOffset / 2, yOffset);
     }
 
-    if (node->Right != nullptr)
+    if (node->Right != NilNode)
     {
         MoveToEx(hdc, x, y, nullptr); // 현재 위치에서
         LineTo(hdc, x + xOffset, y + yOffset); // 오른쪽 아래로 선 긋기

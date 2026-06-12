@@ -2,17 +2,18 @@
 
 bool RedBlacktree::InsertNode(int data) noexcept
 {
-	if (RootNode == nullptr)
+	if (RootNode == NilNode)
 	{
-		RootNode = new Node(data);
+		RootNode = new Node;
 		RootNode->Color = BLACK;
+		RootNode->Data = data;
 		RootNode->Parent = NilNode;
 		RootNode->Left = NilNode;
 		RootNode->Right = NilNode;
 		return true;
 	}
 
-	bool ret = InsertNodeRecursive(RootNode, nullptr, data);
+	bool ret = InsertNodeRecursive(RootNode, RootNode->Parent, data);
 
 	// 루트는 무조건 블랙으로 마지막에 칠해줌
 	if (RootNode != NilNode)
@@ -30,10 +31,12 @@ bool RedBlacktree::InsertNodeRecursive(Node*& currentNode, Node* parentNode, int
 	if (currentNode == NilNode)
 	{
 		// 노드는 Red 노드로 항상 리프 노드에 삽입됨, 항상 Left, Right에 NilNode 가르키도록 함
-		currentNode = new Node(data);
+		currentNode = new Node;
+		currentNode->Data = data;
 		currentNode->Parent = parentNode;
 		currentNode->Left = NilNode;
 		currentNode->Right = NilNode;
+		currentNode->Color = RED;
 
 		// 삽입으로 인해서 레드 블랙 트리의 균형이 깨졌는지 체크하고 밸런싱
 		// 부모가 RED만 아니면 밸런스 로직을 거칠 필요가 없음

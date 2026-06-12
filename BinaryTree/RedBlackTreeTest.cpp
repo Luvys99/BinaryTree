@@ -45,13 +45,12 @@ void StressTestFuc(std::mt19937& gen)
         }
 
         // 검증 중위순회를 통해서 값들이 삭제, 삽입에도 정렬이 보장되는지
-        int prevvalue = -1; // 최소값보다 작은 값중에서도 가장 큰 값
-        if (g_tree.VerifyBinarySortTree(g_tree.GetRoot(), prevvalue) == false)
+        // 레드 블랙트리 규칙이 잘 지켜지고 있는지
+        if (g_tree.VerifyRedBlackTree() == false)
         {
             std::cout << "test failed!! " << i << " Loop error" << "\n";
             return;
         }
-
 
     }
     test_Loop_count++;

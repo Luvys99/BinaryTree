@@ -22,6 +22,7 @@ void RedBlacktree::deleteNodeRecursive(Node*& currentNode, int data) noexcept
 		{
 			// 삭제할 노드가 레드인지 블랙인지 확인
 			bool isblack = false;
+			// 부모 포인터 미리 저장
 			Node* parentNode = currentNode->Parent;
 
 			if (currentNode->Color == BLACK)
@@ -36,8 +37,9 @@ void RedBlacktree::deleteNodeRecursive(Node*& currentNode, int data) noexcept
 			// 삭제한 노드가 블랙이라면 밸런스 필요함
 			if (isblack == true)
 			{
-				// NilNode여도 호출 ( 밸런스의 기준으로 던져도 됨 )
+				// NilNode의 부모 연결
 				NilNode->Parent = parentNode;
+				// NilNode여도 호출 ( 밸런스의 기준으로 던져도 됨 )
 				DeleteNodeBalance(currentNode);
 			}
 
@@ -71,29 +73,23 @@ void RedBlacktree::deleteNodeRecursive(Node*& currentNode, int data) noexcept
 			return;
 		}
 		// 자식 노드가 두 개인 경우 오른 자식 중에 가장 작은노드 또는 왼자식 중에 가장 큰 노드를 선택해서 값을 바꿔주고 해당 노드 삭제해줌
-		// 오른쪽 트리에서 가장 작은 값을 구해서 바꿔주고 해당 노드 삭제하는 방법을 선택
 		// 자식 노드가 둘이라면 색 검사를 해야함 레드, 블랙 둘다 가능하기 때문
 		else if (currentNode->Left != NilNode && currentNode->Right != NilNode)
 		{
 			// 레드, 블랙이든 삭제는 동일
-			Node* minNode = currentNode->Right;
-			while (minNode->Left != NilNode)
+			// 왼쪽 노드에서 가장 큰 값을 찾아서 
+			Node* minNode = currentNode->Left;
+			while (minNode->Right != NilNode)
 			{
-				minNode = minNode->Left;
+				minNode = minNode->Right;
 			}
 			currentNode->Data = minNode->Data;
 
-			// 삭제할 노드가 왼쪽에 없는 것은 확정이기 때문에 오른쪽만 검색
-			deleteNodeRecursive(currentNode->Right, minNode->Data);
+			// 삭제할 노드가 왼쪽에 있으므로 왼쪽으로 재귀함수를  통해서 삭제
+			deleteNodeRecursive(currentNode->Left, minNode->Data);
 
-			// 삭제 이후에 최종 삭제 노드를 기준으로 밸런스 작업
-			// 레드면 밸런스 X, 블랙이면 밸런스 작업
-			if (minNode->Color == BLACK)
-			{
-				DeleteNodeBalance(minNode);
-				return;
-			}
-
+			// 최종 삭제 노드는 자식이 2개인 경우가 없기 때문에 여기서 밸런스 호출해줄 필요 없음
+			return;
 		}
 
 	}
@@ -115,6 +111,7 @@ void RedBlacktree::DeleteNodeBalance(Node* currentNode) noexcept
 {
 	// 반복 검사 시작
 	// 밸런싱이 필요한 상황이면 루프 ( 루트가 아니며 삭제 노드가 블랙이라면 블랙 -1이 되기 때문에 밸런싱이 필요함 )
+	// 밸런스 처리 함수 들어오기 전에 삭제 노드가 블랙이면 함수 호출이 되기 때문에 루드 노트라면 탈출하도록 로직 개선
 	while (1)
 	{
 		// 1. 삭제 노드의 자식이 레드
